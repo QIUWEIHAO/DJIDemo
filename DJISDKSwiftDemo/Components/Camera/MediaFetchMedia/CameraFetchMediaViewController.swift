@@ -9,14 +9,14 @@ import UIKit
 import DJISDK
 
 class CameraFetchMediaViewController: DJIBaseViewController {
-
+    
     @IBOutlet weak var showThumbnailButton: UIButton!
     @IBOutlet weak var showPreviewButton: UIButton!
     @IBOutlet weak var showFullImageButton: UIButton!
     var imageMedia: DJIMedia? = nil
-
+    
     var mediaList: [DJIMedia]? {
-
+        
         didSet{
             // Cache the first JPEG media file in the list.
             if (mediaList == nil)
@@ -52,7 +52,7 @@ class CameraFetchMediaViewController: DJIBaseViewController {
         // start to check the pre-condition
         self.getCameraMode()
     }
-
+    
     override func viewWillDisappear(animated: Bool) {
         super.viewWillDisappear(animated)
         if self.mediaList != nil {
@@ -66,7 +66,7 @@ class CameraFetchMediaViewController: DJIBaseViewController {
      *  Check if the camera's mode is DJICameraModeMediaDownload.
      *  If the mode is not DJICameraModeMediaDownload, we need to set it to be DJICameraModeMediaDownload.
      */
-
+    
     func getCameraMode() {
         let camera: DJICamera? = self.fetchCamera()
         if camera != nil {
@@ -80,14 +80,14 @@ class CameraFetchMediaViewController: DJIBaseViewController {
                 else {
                     self?.startFetchMedia()
                 }
-
-            })
+                
+                })
         }
     }
     /**
      *  Set the camera's mode to DJICameraModeMediaDownload.
      */
-
+    
     func setCameraMode() {
         let camera: DJICamera? = self.fetchCamera()
         if camera != nil {
@@ -98,13 +98,13 @@ class CameraFetchMediaViewController: DJIBaseViewController {
                 else {
                     self?.startFetchMedia()
                 }
-            })
+                })
         }
     }
     /**
      *  Get the list of media files from DJIMediaManager.
      */
-
+    
     func startFetchMedia() {
         let camera: DJICamera? = self.fetchCamera()
         if camera != nil && camera?.mediaManager != nil {
@@ -118,14 +118,14 @@ class CameraFetchMediaViewController: DJIBaseViewController {
                     self?.mediaList = mediaList
                     self?.showAlertResult("SUCCESS: The media list is fetched. ")
                 }
-            })
+                })
         }
     }
     /**
-     *  In order to fetch the thumbnail, we can check if the thumbnail property is nil or not. 
+     *  In order to fetch the thumbnail, we can check if the thumbnail property is nil or not.
      *  If it is nil, we need to call fetchThumbnailWithCompletion: before fetching the thumbnail.
      */
-
+    
     @IBAction func onShowThumbnailButtonClicked(sender: AnyObject) {
         self.showThumbnailButton.enabled = false
         if self.imageMedia?.thumbnail == nil {
@@ -140,15 +140,15 @@ class CameraFetchMediaViewController: DJIBaseViewController {
                     self?.showPhotoWithImage(self!.imageMedia!.thumbnail!)
                 }
                 self?.showThumbnailButton.enabled = true
-            })
+                })
         }
     }
     /**
-     *  Because the preview image is not as small as the thumbnail image, SDK would not cache it as 
+     *  Because the preview image is not as small as the thumbnail image, SDK would not cache it as
      *  a property in DJIMedia. Instead, user need to decide whether to cache the image after invoking
      *  fetchPreviewImageWithCompletion:.
      */
-
+    
     @IBAction func onShowPreviewButtonClicked(sender: AnyObject) {
         self.showPreviewButton.enabled = false
         
@@ -161,18 +161,18 @@ class CameraFetchMediaViewController: DJIBaseViewController {
                 self?.showPhotoWithImage(image)
             }
             self?.showPreviewButton.enabled = true
-        })
+            })
     }
     /**
-     *  The full image is even larger than the preview image. A JPEG image is around 3mb to 4mb. Therefore, 
-     *  SDK does not cache it. There are two differences between the process of fetching preview iamge and 
-     *  the one of fetching full image: 
-     *  1. The full image is received fully at once. The full image file is separated into several data packages. 
-     *     The completion block will be called each time when a data package is ready. 
-     *  2. The received data is the raw image file data rather than a UIImage object. It is more convenient to 
+     *  The full image is even larger than the preview image. A JPEG image is around 3mb to 4mb. Therefore,
+     *  SDK does not cache it. There are two differences between the process of fetching preview iamge and
+     *  the one of fetching full image:
+     *  1. The full image is received fully at once. The full image file is separated into several data packages.
+     *     The completion block will be called each time when a data package is ready.
+     *  2. The received data is the raw image file data rather than a UIImage object. It is more convenient to
      *     store the file into disk.
      */
-
+    
     @IBAction func onShowFullImageButtonClicked(sender: AnyObject) {
         self.showFullImageButton.enabled = false
         
@@ -193,9 +193,9 @@ class CameraFetchMediaViewController: DJIBaseViewController {
                 }
             }
             self?.showFullImageButton.enabled = true
-        })
+            })
     }
-
+    
     // Utility methods to show the image
     func showPhotoWithImage(image: UIImage) {
         let bkgndView: UIView = UIView(frame: self.view.bounds)
@@ -220,7 +220,7 @@ class CameraFetchMediaViewController: DJIBaseViewController {
         bkgndView.addSubview(imgView)
         self.view!.addSubview(bkgndView)
     }
-
+    
     func showPhotoWithData(data: NSData?) {
         if data != nil {
             let image: UIImage? = UIImage(data: data!)
@@ -232,10 +232,10 @@ class CameraFetchMediaViewController: DJIBaseViewController {
             }
         }
     }
-
+    
     func onImageViewTap(recognized: UIGestureRecognizer) {
         let view: UIView = recognized.view!
         view.removeFromSuperview()
     }
-
+    
 }

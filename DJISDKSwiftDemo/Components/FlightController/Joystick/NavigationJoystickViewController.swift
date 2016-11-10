@@ -59,6 +59,9 @@ class NavigationJoystickViewController: DJIBaseViewController, DJIFlightControll
         }
     }
 
+    @IBAction func updateURLTextField(sender: UITextField) {
+        serverUrl = sender.text
+    }
     
     
     
@@ -210,12 +213,66 @@ class NavigationJoystickViewController: DJIBaseViewController, DJIFlightControll
             let camera: DJICamera? = self.fetchCamera()
             if camera != nil {
                 camera?.delegate = self
+                self.getCameraMode()
             }
-        
         }
         
     }
-
+    func getCameraMode() {
+        let camera: DJICamera? = self.fetchCamera()
+        if camera != nil {
+            camera!.getCameraModeWithCompletion({[weak self] (mode: DJICameraMode, error: NSError?) -> Void in
+                if error != nil {
+                    self?.showAlertResult("ERROR: getCameraModeWithCompletion:\(error!.description)")
+                }
+                else if mode != DJICameraMode.MediaDownload {
+                    self?.setCameraMode()
+                }
+                else {
+                    self?.startFetchMedia()
+                }
+                
+                })
+        }
+    }
+    
+    /**
+     *  Set the camera's mode to DJICameraModeMediaDownload.
+     */
+    
+    func setCameraMode() {
+        let camera: DJICamera? = self.fetchCamera()
+        if camera != nil {
+            camera!.setCameraMode(DJICameraMode.MediaDownload, withCompletion: {[weak self](error: NSError?) -> Void in
+                if error != nil {
+                    self?.showAlertResult("ERROR: setCameraMode:withCompletion:\(error!.description)")
+                }
+                else {
+                    self?.startFetchMedia()
+                }
+                })
+        }
+    }
+    /**
+     *  Get the list of media files from DJIMediaManager.
+     */
+    
+    func startFetchMedia() {
+        let camera: DJICamera? = self.fetchCamera()
+        if camera != nil && camera?.mediaManager != nil {
+            
+            camera!.mediaManager!.fetchMediaListWithCompletion( {[weak self](mediaList:[DJIMedia]?, error: NSError?) -> Void in
+                
+                if error != nil {
+                    self?.showAlertResult("ERROR: fetchMediaListWithCompletion:\(error!.description)")
+                }
+                else {
+                    self?.mediaList = mediaList
+                    self?.showAlertResult("SUCCESS: The media list is fetched. ")
+                }
+                })
+        }
+    }
 
     override func viewDidAppear(animated: Bool) {
         super.viewDidAppear(animated)
@@ -329,7 +386,7 @@ class NavigationJoystickViewController: DJIBaseViewController, DJIFlightControll
         manager.requestSerializer = AFJSONRequestSerializer()
 //        let params = ["longUrl": "MYURL"]
         
-        manager.GET("https://api.flickr.com/services/rest/?method=flickr.photos.search&api_key=d9d5cc05a654a396190ad3403494361f&tags=sky&format=json&nojsoncallback=1&auth_token=72157672504146203-9eddb7e30543b33b&api_sig=0dbd8f4d1c65a88a65bf918c97577184", parameters: nil, success: { (theTask:NSURLSessionDataTask, theObject:AnyObject?) in
+        manager.GET("https://api.flickr.com/services/rest/?method=flickr.photos.search&api_key=ed88994bbcb534c7c994f858de1f7d75&tags=sky&format=json&nojsoncallback=1", parameters: nil, success: { (theTask:NSURLSessionDataTask, theObject:AnyObject?) in
             let theJSON = theObject as! NSDictionary
             let thePhotos = theJSON["photos"] as! NSDictionary
             let thePhotoList = thePhotos["photo"] as! NSArray
@@ -358,13 +415,11 @@ class NavigationJoystickViewController: DJIBaseViewController, DJIFlightControll
         
     }
     
-    @IBAction func updateServerURLTextField(sender: UITextField) {
-        serverUrl = sender.text
-    }
+
     @IBAction func onSendImageButtonClicked(sender: UIButton) {
         self.sendImageButton.enabled = false
         
-//        self.shootPhoto()
+//        self.shootPhoto() 
         
         let downloadData: NSMutableData = NSMutableData()
         self.imageMedia?.fetchMediaDataWithCompletion({[weak self](data:NSData?, stop:UnsafeMutablePointer<ObjCBool>, error:NSError?) -> Void in
@@ -378,10 +433,11 @@ class NavigationJoystickViewController: DJIBaseViewController, DJIFlightControll
                 if Int64(downloadData.length) == self?.imageMedia?.fileSizeInBytes {
                     dispatch_async(dispatch_get_main_queue(), {() -> Void in
                         if let imageData = UIImage(data: downloadData){
-                            self?.sendImageToServer("http://169.231.177.184:5000", imageData: imageData)
-//                            if let urlFromView = self?.serverUrl {
-//                                self?.sendImageToServer(urlFromView, imageData: imageData)
-//                            }
+//                            self?.sendImageToServer("http://169.231.177.184:5000", imageData: imageData)
+                            if let urlFromView = self?.serverUrl{
+                                self!.yawCountLabel.text = urlFromView
+                                self?.sendImageToServer(urlFromView, imageData: imageData)
+                            }
                         }
                         
                         self?.sendImageButton.enabled = true
