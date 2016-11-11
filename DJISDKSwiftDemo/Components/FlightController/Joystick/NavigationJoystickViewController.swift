@@ -31,11 +31,17 @@ class NavigationJoystickViewController: DJIBaseViewController, DJIFlightControll
     @IBOutlet weak var yawCountLabel: UILabel!
     
     @IBOutlet weak var JSONData: UILabel!
+    
+    @IBOutlet weak var cameraSystemStateLabel: UILabel!
+ 
+    
     weak var aircraft: DJIAircraft? = nil
     var serverUrl: String? = nil
     
 
     @IBOutlet weak var sendImageButton: UIButton!
+    
+    
     var imageMedia: DJIMedia? = nil
     
     var mediaList: [DJIMedia]? {
@@ -63,9 +69,6 @@ class NavigationJoystickViewController: DJIBaseViewController, DJIFlightControll
         serverUrl = sender.text
     }
     
-    
-    
-
     @IBAction func onEnterVirtualStickControlButtonClicked(sender: AnyObject) {
         if (self.aircraft != nil) {
             self.aircraft!.flightController?.enableVirtualStickControlModeWithCompletion({[weak self] (error: NSError?) in
@@ -213,67 +216,11 @@ class NavigationJoystickViewController: DJIBaseViewController, DJIFlightControll
             let camera: DJICamera? = self.fetchCamera()
             if camera != nil {
                 camera?.delegate = self
-                self.getCameraMode()
             }
         }
         
     }
-    func getCameraMode() {
-        let camera: DJICamera? = self.fetchCamera()
-        if camera != nil {
-            camera!.getCameraModeWithCompletion({[weak self] (mode: DJICameraMode, error: NSError?) -> Void in
-                if error != nil {
-                    self?.showAlertResult("ERROR: getCameraModeWithCompletion:\(error!.description)")
-                }
-                else if mode != DJICameraMode.MediaDownload {
-                    self?.setCameraMode()
-                }
-                else {
-                    self?.startFetchMedia()
-                }
-                
-                })
-        }
-    }
     
-    /**
-     *  Set the camera's mode to DJICameraModeMediaDownload.
-     */
-    
-    func setCameraMode() {
-        let camera: DJICamera? = self.fetchCamera()
-        if camera != nil {
-            camera!.setCameraMode(DJICameraMode.MediaDownload, withCompletion: {[weak self](error: NSError?) -> Void in
-                if error != nil {
-                    self?.showAlertResult("ERROR: setCameraMode:withCompletion:\(error!.description)")
-                }
-                else {
-                    self?.startFetchMedia()
-                }
-                })
-        }
-    }
-    /**
-     *  Get the list of media files from DJIMediaManager.
-     */
-    
-    func startFetchMedia() {
-        let camera: DJICamera? = self.fetchCamera()
-        if camera != nil && camera?.mediaManager != nil {
-            
-            camera!.mediaManager!.fetchMediaListWithCompletion( {[weak self](mediaList:[DJIMedia]?, error: NSError?) -> Void in
-                
-                if error != nil {
-                    self?.showAlertResult("ERROR: fetchMediaListWithCompletion:\(error!.description)")
-                }
-                else {
-                    self?.mediaList = mediaList
-                    self?.showAlertResult("SUCCESS: The media list is fetched. ")
-                }
-                })
-        }
-    }
-
     override func viewDidAppear(animated: Bool) {
         super.viewDidAppear(animated)
         // flight controller should be ready
@@ -419,8 +366,39 @@ class NavigationJoystickViewController: DJIBaseViewController, DJIFlightControll
     @IBAction func onSendImageButtonClicked(sender: UIButton) {
         self.sendImageButton.enabled = false
         
-//        self.shootPhoto() 
         
+        if let camera = self.fetchCamera(){
+            camera.setCameraMode(DJICameraMode.ShootPhoto, withCompletion: { (error:NSError?) in
+                if error != nil{
+                    self.showAlertResult("ERROR: setCameraModeToShootWithCompletion:\(error!.description)")
+                }else{
+                    camera.startShootPhoto(DJICameraShootPhotoMode.Single, withCompletion: { (error:NSError?) in
+                        if error != nil{
+                            self.showAlertResult("ERROR: shootOnePhotoWithCompletion:\(error!.description)")
+                        }
+                    })
+                }
+            })
+        }
+        
+        
+        
+        
+        
+        
+//        
+//        if self.getCameraMode() != DJICameraMode.ShootPhoto{
+//            self.fetchCamera()?.setCameraMode(DJICameraMode.ShootPhoto, withCompletion: { (error:NSError?) in
+//                self.shootPhotoAndSendToServer()
+//            })
+//        }else{
+//            self.shootPhotoAndSendToServer()
+//        }
+        
+    }
+    
+    
+    func sendPhotoToServer() {
         let downloadData: NSMutableData = NSMutableData()
         self.imageMedia?.fetchMediaDataWithCompletion({[weak self](data:NSData?, stop:UnsafeMutablePointer<ObjCBool>, error:NSError?) -> Void in
             
@@ -433,13 +411,14 @@ class NavigationJoystickViewController: DJIBaseViewController, DJIFlightControll
                 if Int64(downloadData.length) == self?.imageMedia?.fileSizeInBytes {
                     dispatch_async(dispatch_get_main_queue(), {() -> Void in
                         if let imageData = UIImage(data: downloadData){
-//                            self?.sendImageToServer("http://169.231.177.184:5000", imageData: imageData)
+                            //                            self?.sendImageToServer("http://169.231.177.184:5000", imageData: imageData)
                             if let urlFromView = self?.serverUrl{
                                 self!.yawCountLabel.text = urlFromView
                                 self?.sendImageToServer(urlFromView, imageData: imageData)
+                            }else {
+                                self?.sendImageToServer("http://169.231.177.184:5000", imageData: imageData)
                             }
                         }
-                        
                         self?.sendImageButton.enabled = true
                     })
                 }
@@ -447,7 +426,6 @@ class NavigationJoystickViewController: DJIBaseViewController, DJIFlightControll
             self?.sendImageButton.enabled = true
             })
     }
-    
     
     func sendImageToServer(urlFromView: String, imageData: UIImage){
         let url = NSURL(string:urlFromView)
@@ -508,14 +486,122 @@ class NavigationJoystickViewController: DJIBaseViewController, DJIFlightControll
         
         task.resume()
 
-    
     }
+    
     func generateBoundaryString() -> String
     {
         return "Boundary-\(NSUUID().UUIDString)"
     }
     
-    // Utility methods to show the image
+    
+    func shootPhotoAndSendToServer() {
+        let camera: DJICamera? = self.fetchCamera()
+        if camera != nil {
+            camera?.startShootPhoto(DJICameraShootPhotoMode.Single, withCompletion: {[weak self](error: NSError?) -> Void in
+                if error != nil {
+                    self?.showAlertResult("ERROR: startShootPhoto:withCompletion::\(error!.description)")
+                }else{
+                    camera?.setCameraMode(DJICameraMode.MediaDownload, withCompletion: { [weak self](error:NSError?) in
+                        if error != nil {
+                            self?.showAlertResult("ERROR: startShootPhoto:withCompletion::\(error!.description)")
+                        }else{
+                            if camera?.mediaManager != nil {
+                                camera!.mediaManager!.fetchMediaListWithCompletion( {[weak self](mediaList:[DJIMedia]?, error: NSError?) -> Void in
+                                    
+                                    if error != nil {
+                                        self?.showAlertResult("ERROR: fetchMediaListWithCompletion:\(error!.description)")
+                                    }
+                                    else {
+                                        self?.mediaList = mediaList
+                                        self?.showAlertResult("SUCCESS: The media list is fetched. ")
+                                        self?.sendPhotoToServer();
+                                    }
+                                    })
+                            }
+                        }
+                    })
+                }
+                })
+        }
+    }
+
+    func simulator(simulator: DJISimulator, updateSimulatorState state: DJISimulatorState) {
+        self.simulatorStateLabel.hidden = false
+        self.simulatorStateLabel.text = "Yaw: \(state.yaw)\nX: \(state.positionX) Y: \(state.positionY) Z: \(state.positionZ)"
+    }
+    
+    func camera(camera: DJICamera, didGenerateNewMediaFile newMedia: DJIMedia) {
+        if newMedia.mediaType == DJIMediaType.JPEG {
+            
+            let seconds = 0.5
+            let delay = seconds * Double(NSEC_PER_SEC)  // nanoseconds per seconds
+            let dispatchTime = dispatch_time(DISPATCH_TIME_NOW, Int64(delay))
+            
+            dispatch_after(dispatchTime, dispatch_get_main_queue(), {
+                self.JSONData.text = "did generate media"
+
+                camera.setCameraMode(DJICameraMode.MediaDownload, withCompletion: { (error:NSError?) in
+                    if error != nil{
+                        camera.getCameraModeWithCompletion({ (mode :DJICameraMode, error:NSError?) in
+                            if error != nil{
+                                self.showAlertResult("ERROR: getCameraModeWithCompletion:\(error!.description)")
+                            }
+                            else{
+                                var text:String? = nil
+                                switch mode{
+                                case .MediaDownload:  text = "download"
+                                case .Playback: text = "playback"
+                                case .RecordVideo: text = "record"
+                                case .ShootPhoto : text = "shoot"
+                                case .Unknown: text = "unknown"
+                                }
+                                
+                                self.yawCountLabel.text = text
+                            }
+                        })
+                        self.showAlertResult("ERROR: setCameraModeToDownloadWithCompletion:\(error!.description)")
+                    }else{
+                        self.imageMedia = newMedia
+                        self.sendPhotoToServer()
+                    }
+                })
+            })
+        }
+    }
+
+    func camera(camera: DJICamera, didUpdateSystemState systemState: DJICameraSystemState) {
+                self.cameraSystemStateLabel.text = "isShootingSinglePhoto:  \(systemState.isShootingSinglePhoto) \n isShootingSinglePhotoInRAWFormat:  \(systemState.isShootingSinglePhotoInRAWFormat) \n isShootingIntervalPhoto:  \(systemState.isShootingIntervalPhoto) \n isShootingBurstPhoto:  \(systemState.isShootingBurstPhoto) \n isRecording:  \(systemState.isRecording) \n isStoringPhoto:  \(systemState.isStoringPhoto) \n isCameraOverHeated:  \(systemState.isCameraOverHeated) \n isCameraError:  \(systemState.isCameraError) \n "
+    }
+
+    
+//        camera.setCameraMode(DJICameraMode.MediaDownload, withCompletion: { (error:NSError?) in
+//            if error != nil{
+//                self.showAlertResult("ERROR: setCameraModeWithToDownloadCompletion:\(error!.description)")
+//            }else{
+//                if camera.mediaManager != nil {
+//                    camera.mediaManager!.fetchMediaListWithCompletion( {[weak self](mediaList:[DJIMedia]?, error: NSError?) -> Void in
+//
+//                        if error != nil {
+//                            self?.showAlertResult("ERROR: fetchMediaListWithCompletion:\(error!.description)")
+//                        }
+//                        else {
+//                            self?.mediaList = mediaList
+//                            self?.showAlertResult("SUCCESS: The media list is fetched. ")
+//                            self?.sendPhotoToServer();
+//                        }
+//                        })
+//                }
+//                
+//            }
+//        })
+
+    
+    
+}
+
+
+
+// Utility methods to show the image
 //    func showPhotoWithImage(image: UIImage) {
 //        let bkgndView: UIView = UIView(frame: self.view.bounds)
 //        bkgndView.backgroundColor = UIColor.whiteColor().colorWithAlphaComponent(0.7)
@@ -539,7 +625,7 @@ class NavigationJoystickViewController: DJIBaseViewController, DJIFlightControll
 //        bkgndView.addSubview(imgView)
 //        self.view!.addSubview(bkgndView)
 //    }
-//    
+//
 //    func showPhotoWithData(data: NSData?) {
 //        if data != nil {
 //            let image: UIImage? = UIImage(data: data!)
@@ -551,22 +637,3 @@ class NavigationJoystickViewController: DJIBaseViewController, DJIFlightControll
 //            }
 //        }
 //    }
-    
-    func shootPhoto() {
-        let camera: DJICamera? = self.fetchCamera()
-        if camera != nil {
-            camera?.startShootPhoto(DJICameraShootPhotoMode.Single, withCompletion: {[weak self](error: NSError?) -> Void in
-                if error != nil {
-                    self?.showAlertResult("ERROR: startShootPhoto:withCompletion::\(error!.description)")
-                }
-                })
-        }
-    }
-    
-
-
-    func simulator(simulator: DJISimulator, updateSimulatorState state: DJISimulatorState) {
-        self.simulatorStateLabel.hidden = false
-        self.simulatorStateLabel.text = "Yaw: \(state.yaw)\nX: \(state.positionX) Y: \(state.positionY) Z: \(state.positionZ)"
-    }
-}

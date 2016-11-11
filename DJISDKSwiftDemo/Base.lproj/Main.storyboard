@@ -1595,6 +1595,16 @@
                                     </mask>
                                 </variation>
                             </label>
+                            <label opaque="NO" userInteractionEnabled="NO" contentMode="left" horizontalHuggingPriority="251" verticalHuggingPriority="251" text="Label" textAlignment="natural" lineBreakMode="tailTruncation" numberOfLines="9" baselineAdjustment="alignBaselines" adjustsFontSizeToFit="NO" translatesAutoresizingMaskIntoConstraints="NO" id="i4o-gI-ej9">
+                                <rect key="frame" x="150" y="248" width="300" height="200"/>
+                                <constraints>
+                                    <constraint firstAttribute="width" constant="300" id="J7g-dv-CDd"/>
+                                    <constraint firstAttribute="height" constant="200" id="XFk-P3-aea"/>
+                                </constraints>
+                                <fontDescription key="fontDescription" type="system" pointSize="17"/>
+                                <color key="textColor" cocoaTouchSystemColor="darkTextColor"/>
+                                <nil key="highlightedColor"/>
+                            </label>
                         </subviews>
                         <color key="backgroundColor" white="1" alpha="1" colorSpace="calibratedWhite"/>
                         <constraints>
@@ -1663,6 +1673,7 @@
                             </constraint>
                             <constraint firstItem="knQ-zA-urd" firstAttribute="centerX" secondItem="7mj-jp-Flu" secondAttribute="centerX" constant="-106.5" id="Ph1-eD-AAb"/>
                             <constraint firstItem="AH3-TC-OBI" firstAttribute="centerX" secondItem="7mj-jp-Flu" secondAttribute="centerX" constant="-106" id="PsW-nL-bA0"/>
+                            <constraint firstItem="i4o-gI-ej9" firstAttribute="centerX" secondItem="7mj-jp-Flu" secondAttribute="centerX" id="QSy-qw-Q2S"/>
                             <constraint firstItem="cz6-gQ-dKQ" firstAttribute="centerX" secondItem="7mj-jp-Flu" secondAttribute="centerX" constant="107" id="Qgh-If-3iV"/>
                             <constraint firstItem="cFc-PV-Y6s" firstAttribute="centerY" secondItem="7mj-jp-Flu" secondAttribute="centerY" id="Qkx-eS-uAZ">
                                 <variation key="heightClass=compact" constant="72"/>
@@ -1788,6 +1799,7 @@
                             <constraint firstItem="knQ-zA-urd" firstAttribute="centerY" secondItem="7mj-jp-Flu" secondAttribute="centerY" id="zhe-UP-0J9">
                                 <variation key="widthClass=compact" constant="-119.5"/>
                             </constraint>
+                            <constraint firstItem="i4o-gI-ej9" firstAttribute="centerY" secondItem="7mj-jp-Flu" secondAttribute="centerY" constant="80" id="zqj-hv-0Um"/>
                         </constraints>
                         <variation key="default">
                             <mask key="constraints">
@@ -1930,6 +1942,7 @@
                     <simulatedOrientationMetrics key="simulatedOrientationMetrics"/>
                     <connections>
                         <outlet property="JSONData" destination="AH3-TC-OBI" id="chm-CB-VJX"/>
+                        <outlet property="cameraSystemStateLabel" destination="i4o-gI-ej9" id="D8f-JM-ujs"/>
                         <outlet property="coordinateSys" destination="0Vf-vS-yeN" id="bKf-Ae-Jy5"/>
                         <outlet property="enableVirtualStickButton" destination="knQ-zA-urd" id="gmM-Cq-02z"/>
                         <outlet property="joystickLeft" destination="wbB-kn-d6S" id="PBm-tA-uA2"/>
